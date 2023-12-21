@@ -2,6 +2,10 @@ import os
 from termcolor import colored
 
 
+def enable_terminal_coloring():
+    os.system('color')
+
+
 def get_folders(scan_src):
     folders = []
     for r, d, f in os.walk(scan_src):
@@ -18,12 +22,15 @@ def scan():
     for folder in folders:
         os.chdir(folder)
         for file in os.listdir():
-            if not file.endswith('.meta'):
-                print(file)
+            if file.endswith('.meta'):
+                continue
+
+            file_name = file.split('.')[0]
+            print(file_name)
 
 
 if __name__ == "__main__":
-    os.system('color')  # Enable terminal coloring.
+    enable_terminal_coloring()
 
     try:
         scan()
