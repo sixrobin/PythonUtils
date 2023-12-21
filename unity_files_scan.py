@@ -19,6 +19,16 @@ def ask_user_prefix():
     return input('Enter a prefix to check in asset names (leave blank not to check prefixes): ')
 
 
+def print_invalid_files(text, files_list):
+    if len(files_list) == 0:
+        return
+
+    print('\n------------------------------------------------------------')
+    print(colored(f'\n{text} ({len(files_list)} found):', 'white', attrs=['bold']))
+    for invalid_file in files_list:
+        print('- ' + invalid_file)
+
+
 def scan():
     required_prefix = ask_user_prefix()
     print('')
@@ -56,13 +66,8 @@ def scan():
                     invalid_caps.append(colored_file_name)
                     break
 
-    print(colored(f'\n{'Invalid capitals'} ({len(invalid_caps)} found):'))
-    for invalid_file in invalid_caps:
-        print('- ' + invalid_file)
-
-    print(colored(f'\n{f'Missing \"{required_prefix}\" prefix'} ({len(missing_prefix)} found):'))
-    for invalid_file in missing_prefix:
-        print('- ' + invalid_file)
+    print_invalid_files(f'Missing \"{required_prefix}\" prefix', missing_prefix)
+    print_invalid_files('Invalid capitals', invalid_caps)
 
 
 if __name__ == "__main__":
