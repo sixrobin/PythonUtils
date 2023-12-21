@@ -15,11 +15,19 @@ def get_folders(scan_src):
     return folders
 
 
+def ask_user_prefix():
+    return input('Enter a prefix to check in asset names (leave blank not to check prefixes): ')
+
+
 def scan():
+    required_prefix = ask_user_prefix()
+    print('')
+
     scan_src = os.getcwd()
     folders = get_folders(scan_src)
     print(f'Scanning {scan_src}...')
 
+    missing_prefix = []
     invalid_caps = []
 
     for folder in folders:
@@ -29,6 +37,10 @@ def scan():
                 continue
 
             file_name = file.split('.')[0]
+
+            # Prefix check.
+            if required_prefix and not file_name.startswith(required_prefix):
+                missing_prefix.append(colored(required_prefix, 'red') + file_name)
 
             # Capitals check.
             words = file_name.split('_')
@@ -46,6 +58,10 @@ def scan():
 
     print(colored(f'\n{'Invalid capitals'} ({len(invalid_caps)} found):'))
     for invalid_file in invalid_caps:
+        print('- ' + invalid_file)
+
+    print(colored(f'\n{f'Missing \"{required_prefix}\" prefix'} ({len(missing_prefix)} found):'))
+    for invalid_file in missing_prefix:
         print('- ' + invalid_file)
 
 
