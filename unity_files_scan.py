@@ -1,47 +1,10 @@
 import os
+from scan_utils import *
 from termcolor import colored
 
 
-WHITE, RED, GREEN, YELLOW, CYAN, BLUE = 'white', 'red', 'green', 'yellow', 'cyan', 'blue'
-BOLD, UNDERLINE, REVERSE = 'bold', 'underline', 'reverse'
-UNDERSCORE = '_'
-
-
-def enable_terminal_coloring():
-    os.system('color')
-
-
-def get_folders(scan_src):
-    folders = []
-    for root, dirs, _ in os.walk(scan_src):
-        for folder in dirs:
-            folders.append(os.path.join(root, folder))
-
-    return folders
-
-
-def ask_user_prefix():
-    return input('Enter a prefix to check in asset names (leave blank not to check prefixes): ')
-
-
-def print_space_line():
-    print('------------------------------------------------------------')
-
-
-def print_invalid_files(text, files_list):
-    if len(files_list) == 0:
-        return 0
-
-    print_space_line()
-    print(colored(f'\n{text} ({len(files_list)} found):', WHITE, attrs=[BOLD]))
-    for invalid_file in files_list:
-        print('- ' + invalid_file)
-
-    return len(files_list)
-
-
 def scan():
-    required_prefix = ask_user_prefix()
+    required_prefix = input('Enter a prefix to check in asset names (leave blank not to check prefixes): ')
     print('')
 
     scan_src = os.getcwd()
@@ -51,6 +14,7 @@ def scan():
     missing_prefix = []
     invalid_caps = []
 
+    # Recursive scan.
     for folder in folders:
         os.chdir(folder)
         for file in os.listdir():
@@ -77,18 +41,11 @@ def scan():
                     invalid_caps.append(colored_file_name)
                     break
 
+    # Result printing.
     errors_count = 0
     errors_count += print_invalid_files(f'Missing \"{required_prefix}\" prefix', missing_prefix)
     errors_count += print_invalid_files('Invalid capitals', invalid_caps)
-
-    print('\n')
-    print_space_line()
-    print('\n')
-
-    if errors_count == 0:
-        print(colored('No error found!', GREEN))
-    else:
-        print(colored(f'{str(errors_count)} error(s) found!', RED))
+    print_total_errors(errors_count)
 
 
 if __name__ == "__main__":
