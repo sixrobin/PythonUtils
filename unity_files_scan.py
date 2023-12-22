@@ -1,7 +1,5 @@
-import os
-import re
 from scan_utils import *
-from termcolor import colored
+import re
 
 
 IGNORED_EXTENSIONS = ['meta', 'asmdef', 'dll']
@@ -27,15 +25,20 @@ def scan_capitals(n):
     words = n.split(UNDERSCORE)
     for word in words:
         if not word:  # Asset name first character is an underscore.
-            return
+            continue
         if valid_animation_frame_keyword(word):
             continue
+
         if word[0].islower() and word[0].isalpha():
             result = ''
             for i in range(len(words)):
                 w = words[i]
-                w = w if not w[0].islower() else colored(w[0], RED) + w[1:]
-                result += w + (UNDERSCORE if i < len(words) - 1 else '')
+                if not w:  # Asset name first character is an underscore.
+                    result += UNDERSCORE
+                else:
+                    w = w if not w[0].islower() else colored(w[0], RED) + w[1:]
+                    result += w + (UNDERSCORE if i < len(words) - 1 else '')
+
             invalid_caps.append(result)
             return
 
@@ -46,6 +49,7 @@ def scan_forbidden_chars(n):
         for c in n:
             attrs = [REVERSE] if c == ' ' else None
             result += c if c in ALLOWED_CHARACTERS else colored(c, RED, attrs=attrs)
+
         forbidden_chars.append(result)
 
 
@@ -55,9 +59,7 @@ def scan_number_format(n):
     for i in range(1, len(n)):
         c, prev_c = n[i], n[i - 1]
         if c.isalpha():
-            if prev_c.isdigit():  # Missing underscore.
-                result += colored(UNDERSCORE, RED)
-            result += c
+            result += c if not prev_c.isdigit() else f'{colored(UNDERSCORE, RED)}{c}'  # Missing underscore.
         elif c.isdigit():
             if prev_c.isalpha():  # Missing underscore.
                 if prev_c == 'f':  # Animation frame format (_fXX).
@@ -127,10 +129,6 @@ def scan():
             scan_forbidden_chars(file_name)
             scan_number_format(file_name)
             scan_numbering_start(file_name, extension, numbering_start)
-
-            # TODO: AOC_ prefix for .overrideController files.
-            # TODO: Anim_ prefix for .anim files.
-            # TODO: AnimCtrl_ prefix for .controller files.
 
     # Result printing.
     errors_count = 0
