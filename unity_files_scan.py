@@ -3,6 +3,9 @@ from scan_utils import *
 from termcolor import colored
 
 
+IGNORED_EXTENSIONS = ['meta']
+
+
 def scan():
     required_prefix = input('Enter a prefix to check in asset names (leave blank not to check prefixes): ')
     print('')
@@ -18,7 +21,9 @@ def scan():
     for folder in folders:
         os.chdir(folder)
         for file in os.listdir():
-            if file.endswith('.meta'):
+            extension = file.split('.')[-1]
+            if any([extension == ignored_ext for ignored_ext in IGNORED_EXTENSIONS]):
+                print(file)
                 continue
 
             file_name = file.split('.')[0]
@@ -40,6 +45,13 @@ def scan():
                         colored_file_name += w + (UNDERSCORE if i < len(words) - 1 else '')
                     invalid_caps.append(colored_file_name)
                     break
+
+            # TODO: Forbidden characters (space, special characters, etc.).
+            # TODO: 2 digits numbers format.
+            # TODO: constant numbering start (0 or 1, based on user input before scanning).
+            # TODO: AOC_ prefix for .overrideController files.
+            # TODO: Anim_ prefix for .anim files.
+            # TODO: AnimCtrl_ prefix for .controller files.
 
     # Result printing.
     errors_count = 0
