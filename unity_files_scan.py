@@ -6,6 +6,39 @@ from termcolor import colored
 IGNORED_EXTENSIONS = ['meta', 'asmdef', 'dll']
 ALLOWED_CHARACTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-+'
 
+missing_prefix = []
+invalid_caps = []
+forbidden_chars = []
+
+
+def scan_prefix(n, p):
+    if not n.startswith(p):
+        missing_prefix.append(colored(p, RED) + n)
+
+
+def scan_capitals(n):
+    words = n.split(UNDERSCORE)
+    for word in words:
+        if not word:  # Asset name first character is an underscore.
+            return
+        if word[0].islower() and word[0].isalpha():
+            result = ''
+            for i in range(len(words)):
+                w = words[i]
+                w = w if not w[0].islower() else colored(w[0], RED) + w[1:]
+                result += w + (UNDERSCORE if i < len(words) - 1 else '')
+            invalid_caps.append(result)
+            return
+
+
+def scan_forbidden_chars(n):
+    if not all([c in ALLOWED_CHARACTERS for c in n]):
+        result = ''
+        for c in n:
+            attrs = [REVERSE] if c == ' ' else None
+            result += c if c in ALLOWED_CHARACTERS else colored(c, RED, attrs=attrs)
+        forbidden_chars.append(result)
+
 
 def scan():
     required_prefix = input('Enter a prefix to check in asset names (leave blank not to check prefixes): ')
@@ -14,10 +47,6 @@ def scan():
     scan_src = os.getcwd()
     folders = get_folders(scan_src)
     print(f'Scanning {colored(scan_src, WHITE, attrs=[BOLD])}...')
-
-    missing_prefix = []
-    invalid_caps = []
-    forbidden_chars = []
 
     # Recursive scan.
     for folder in folders:
@@ -29,31 +58,11 @@ def scan():
 
             file_name = file.split('.')[0]
 
-            # Prefix check.
-            if required_prefix and not file_name.startswith(required_prefix):
-                missing_prefix.append(colored(required_prefix, RED) + file_name)
+            if required_prefix:
+                scan_prefix(file_name, required_prefix)
 
-            # Capitals check.
-            words = file_name.split(UNDERSCORE)
-            for word in words:
-                if not word:  # Asset name first character is an underscore.
-                    continue
-                if word[0].islower() and word[0].isalpha():
-                    colored_file_name = ''
-                    for i in range(len(words)):
-                        w = words[i]
-                        w = w if not w[0].islower() else colored(w[0], RED) + w[1:]
-                        colored_file_name += w + (UNDERSCORE if i < len(words) - 1 else '')
-                    invalid_caps.append(colored_file_name)
-                    break
-
-            # Forbidden characters.
-            if not all([c in ALLOWED_CHARACTERS for c in file_name]):
-                colored_file_name = ''
-                for c in file_name:
-                    attrs = [REVERSE] if c == ' ' else None
-                    colored_file_name += c if c in ALLOWED_CHARACTERS else colored(c, RED, attrs=attrs)
-                forbidden_chars.append(colored_file_name)
+            scan_capitals(file_name)
+            scan_forbidden_chars(file_name)
 
             # TODO: 2 digits numbers format.
             # TODO: constant numbering start (0 or 1, based on user input before scanning).
