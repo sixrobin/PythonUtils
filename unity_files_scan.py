@@ -11,6 +11,7 @@ missing_prefix = []
 invalid_caps = []
 forbidden_chars = []
 invalid_number_format = []
+invalid_numbering_start = []
 
 
 def scan_prefix(n, p):
@@ -23,6 +24,7 @@ def scan_capitals(n):
     for word in words:
         if not word:  # Asset name first character is an underscore.
             return
+        # TODO: Handle animation frame format _fXX.
         if word[0].islower() and word[0].isalpha():
             result = ''
             for i in range(len(words)):
@@ -42,7 +44,7 @@ def scan_forbidden_chars(n):
         forbidden_chars.append(result)
 
 
-def scan_number_format(n, numbering_start):
+def scan_number_format(n):
     numbers_indices = dict((m.start(), m.group()) for m in re.finditer(r'\d+', n))
     result = n[0]
     for i in range(1, len(n)):
@@ -58,25 +60,40 @@ def scan_number_format(n, numbering_start):
                         result += colored(UNDERSCORE, RED)
                 else:
                     result += colored(UNDERSCORE, RED)
-            if i in numbers_indices:
-                if len(numbers_indices[i]) == 1:  # Invalid 2 digits format number.
-                    result += colored(c, RED)
-                elif numbering_start:
-                    nb = int(numbers_indices[i])
-                    if nb == 0 and numbering_start == '1':
-                        result += colored(c, RED)  # TODO: Should color the last digit.
-                    # TODO: If nb==1 and numbering_start==0, check if file with number 0 exists.
-                    else:
-                        result += c
-                else:
-                    result += c
-            else:
-                result += c
+
+            # Invalid 2 digits format number.
+            result += colored(c, RED) if (i in numbers_indices and len(numbers_indices[i]) == 1) else c
         else:
             result += c
 
     if n != result:
         invalid_number_format.append(f'{result} {colored(f'/ source file name: {n}', CYAN)}')
+
+
+def scan_numbering_start(n, ext, numbering_start):
+    numbers_indices = dict((m.start(), m.group()) for m in re.finditer(r'\d+', n))
+    result = ''
+    invalid_result = False
+
+    for i in range(len(n)):
+        if i in numbers_indices:
+            nb = numbers_indices[i]
+            if int(nb) == 0 and numbering_start == '1':
+                result += colored(nb, RED)
+                invalid_result = True
+            elif int(nb) == 1 and numbering_start == '0':
+                zero_based_file_name = n[:i] + ('0' * len(nb)) + n[i + len(nb):]
+                zero_based_file_exists = os.path.exists(f'{os.getcwd()}/{zero_based_file_name}.{ext}')
+                result += nb if zero_based_file_exists else colored(nb, RED)
+                invalid_result |= not zero_based_file_exists
+            else:
+                result += nb
+            i += len(nb)  # Jump directly to next non digit character.
+        elif not n[i].isdigit():
+            result += n[i]
+
+    if invalid_result:
+        invalid_numbering_start.append(result)
 
 
 def scan():
@@ -103,7 +120,8 @@ def scan():
 
             scan_capitals(file_name)
             scan_forbidden_chars(file_name)
-            scan_number_format(file_name, numbering_start)
+            scan_number_format(file_name)
+            scan_numbering_start(file_name, extension, numbering_start)
 
             # TODO: AOC_ prefix for .overrideController files.
             # TODO: Anim_ prefix for .anim files.
@@ -115,6 +133,7 @@ def scan():
     errors_count += print_invalid_files('Invalid capitals', invalid_caps)
     errors_count += print_invalid_files('Forbidden characters', forbidden_chars)
     errors_count += print_invalid_files('Invalid number format', invalid_number_format)
+    errors_count += print_invalid_files('Invalid numbering start', invalid_numbering_start)
     print_total_errors(errors_count)
 
 
