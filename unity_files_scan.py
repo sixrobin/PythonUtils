@@ -14,6 +14,10 @@ invalid_number_format = []
 invalid_numbering_start = []
 
 
+def valid_animation_frame_keyword(keyword):
+    return keyword[0] == 'f' and keyword[1:].isdigit()
+
+
 def scan_prefix(n, p):
     if not n.startswith(p):
         missing_prefix.append(colored(p, RED) + n)
@@ -24,7 +28,8 @@ def scan_capitals(n):
     for word in words:
         if not word:  # Asset name first character is an underscore.
             return
-        # TODO: Handle animation frame format _fXX.
+        if valid_animation_frame_keyword(word):
+            continue
         if word[0].islower() and word[0].isalpha():
             result = ''
             for i in range(len(words)):
