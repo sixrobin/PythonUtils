@@ -1,4 +1,5 @@
 import os
+import re
 from scan_utils import *
 from termcolor import colored
 
@@ -9,6 +10,7 @@ ALLOWED_CHARACTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345
 missing_prefix = []
 invalid_caps = []
 forbidden_chars = []
+invalid_number_format = []
 
 
 def scan_prefix(n, p):
@@ -40,8 +42,46 @@ def scan_forbidden_chars(n):
         forbidden_chars.append(result)
 
 
+def scan_number_format(n, numbering_start):
+    numbers_indices = dict((m.start(), m.group()) for m in re.finditer(r'\d+', n))
+    result = n[0]
+    for i in range(1, len(n)):
+        c, prev_c = n[i], n[i - 1]
+        if c.isalpha():
+            if prev_c.isdigit():  # Missing underscore.
+                result += colored(UNDERSCORE, RED)
+            result += c
+        elif c.isdigit():
+            if prev_c.isalpha():  # Missing underscore.
+                if prev_c == 'f':  # Animation frame format (_fXX).
+                    if n[i - 2] != UNDERSCORE:
+                        result += colored(UNDERSCORE, RED)
+                else:
+                    result += colored(UNDERSCORE, RED)
+            if i in numbers_indices:
+                if len(numbers_indices[i]) == 1:  # Invalid 2 digits format number.
+                    result += colored(c, RED)
+                elif numbering_start:
+                    nb = int(numbers_indices[i])
+                    if nb == 0 and numbering_start == '1':
+                        result += colored(c, RED)  # TODO: Should color the last digit.
+                    # TODO: If nb==1 and numbering_start==0, check if file with number 0 exists.
+                    else:
+                        result += c
+                else:
+                    result += c
+            else:
+                result += c
+        else:
+            result += c
+
+    if n != result:
+        invalid_number_format.append(f'{result} {colored(f'/ source file name: {n}', CYAN)}')
+
+
 def scan():
     required_prefix = input('Enter a prefix to check in asset names (leave blank not to check prefixes): ')
+    numbering_start = input('Enter numbering first value (0 or 1): ')
     print('')
 
     scan_src = os.getcwd()
@@ -63,9 +103,8 @@ def scan():
 
             scan_capitals(file_name)
             scan_forbidden_chars(file_name)
+            scan_number_format(file_name, numbering_start)
 
-            # TODO: 2 digits numbers format.
-            # TODO: constant numbering start (0 or 1, based on user input before scanning).
             # TODO: AOC_ prefix for .overrideController files.
             # TODO: Anim_ prefix for .anim files.
             # TODO: AnimCtrl_ prefix for .controller files.
@@ -75,6 +114,7 @@ def scan():
     errors_count += print_invalid_files(f'Missing \"{required_prefix}\" prefix', missing_prefix)
     errors_count += print_invalid_files('Invalid capitals', invalid_caps)
     errors_count += print_invalid_files('Forbidden characters', forbidden_chars)
+    errors_count += print_invalid_files('Invalid number format', invalid_number_format)
     print_total_errors(errors_count)
 
 
