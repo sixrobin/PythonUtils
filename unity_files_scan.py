@@ -3,7 +3,8 @@ from scan_utils import *
 from termcolor import colored
 
 
-IGNORED_EXTENSIONS = ['meta']
+IGNORED_EXTENSIONS = ['meta', 'asmdef', 'dll']
+ALLOWED_CHARACTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-+'
 
 
 def scan():
@@ -16,14 +17,14 @@ def scan():
 
     missing_prefix = []
     invalid_caps = []
+    forbidden_chars = []
 
     # Recursive scan.
     for folder in folders:
         os.chdir(folder)
         for file in os.listdir():
             extension = file.split('.')[-1]
-            if any([extension == ignored_ext for ignored_ext in IGNORED_EXTENSIONS]):
-                print(file)
+            if any([extension == ext for ext in IGNORED_EXTENSIONS]):
                 continue
 
             file_name = file.split('.')[0]
@@ -46,7 +47,14 @@ def scan():
                     invalid_caps.append(colored_file_name)
                     break
 
-            # TODO: Forbidden characters (space, special characters, etc.).
+            # Forbidden characters.
+            if not all([c in ALLOWED_CHARACTERS for c in file_name]):
+                colored_file_name = ''
+                for c in file_name:
+                    attrs = [REVERSE] if c == ' ' else None
+                    colored_file_name += c if c in ALLOWED_CHARACTERS else colored(c, RED, attrs=attrs)
+                forbidden_chars.append(colored_file_name)
+
             # TODO: 2 digits numbers format.
             # TODO: constant numbering start (0 or 1, based on user input before scanning).
             # TODO: AOC_ prefix for .overrideController files.
@@ -57,6 +65,7 @@ def scan():
     errors_count = 0
     errors_count += print_invalid_files(f'Missing \"{required_prefix}\" prefix', missing_prefix)
     errors_count += print_invalid_files('Invalid capitals', invalid_caps)
+    errors_count += print_invalid_files('Forbidden characters', forbidden_chars)
     print_total_errors(errors_count)
 
 
